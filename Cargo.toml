@@ -1,0 +1,12 @@
+[package]
+name = "cogito_api"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+actix-web = "4.11.0"
+sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio-native-tls", "macros", "chrono", "uuid"] }
+dotenvy = "0.15.7"
+serde = { version = "1.0.228", features = ["derive"] }
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.18.1", features = ["serde"] }
