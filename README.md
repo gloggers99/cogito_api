@@ -1,4 +1,10 @@
-# Philosopapi (philosophy api)
+# cogito_api
+
+This is the backend for Cogito, a philosophy research tool.
+
+This API handles user data and connects to the AI service component of Cogito (using gRPC).
+
+This is a HUGE work in progress.
 
 ## Endpoints
 - `/login`
