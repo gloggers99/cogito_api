@@ -21,11 +21,13 @@ async fn main() -> std::io::Result<()> {
     .await
     .expect("Failed to connect to PostgreSQL database.");
 
-    HttpServer::new(move || App::new()
+    HttpServer::new(move || {
+        App::new()
             .app_data(Data::new(pool.clone()))
             .service(user_by_id)
-            .service(login_request))
-        .bind(("127.0.0.1", 8080))?
-        .run()
-        .await
+            .service(login_request)
+    })
+    .bind(("127.0.0.1", 8080))?
+    .run()
+    .await
 }

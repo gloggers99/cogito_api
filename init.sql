@@ -6,7 +6,7 @@ create table users
     user_name       text not null,
     user_pass       text not null,
     user_last_login timestamptz not null default current_timestamp,
-    login_id        uuid
+    login_id        uuid default null unique
 );
 
 alter table users
