@@ -1,7 +1,7 @@
 use crate::user::User;
-use actix_web::cookie::Cookie;
+use actix_web::cookie::{Cookie, SameSite};
 use actix_web::web::{Data, Form, Json};
-use actix_web::{Either, HttpRequest, HttpResponse, Responder, post};
+use actix_web::{Either, HttpRequest, HttpResponse, Responder, post, cookie};
 use chrono::{Duration, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{Error, PgPool};
@@ -20,6 +20,9 @@ pub struct LoginResponse {
     pub(crate) message: String,
 }
 
+const SESSION_DURATION_MINUTES: i64 = 30;
+const COOKIE_MAX_AGE_SECONDS: i64 = SESSION_DURATION_MINUTES * 60;
+
 /// The login endpoint for the API.
 ///
 /// Upon successful login the API will grant a cookie attached with a UUID which grants access to
@@ -37,53 +40,49 @@ pub async fn login_request(
 
     match matched_user {
         Ok(user) => {
-            if user.user_pass == password {
-                // Generate UUID for login token.
-                let login_id = Uuid::new_v4();
+            if user.user_pass != password {
+                // Wrong password.
+                return HttpResponse::Forbidden().json(LoginResponse {
+                    message: "Invalid credentials.".into(),
+                })
+            }
 
-                let update_result = sqlx::query!(
-                    "update users set login_id = $1 where user_id = $2",
+            // Generate secure login token
+            let login_id = Uuid::new_v4();
+            let now = Utc::now();
+
+            // Update both login_id and last_login in a single transaction
+            let update_result = sqlx::query!(
+                    r#"
+                    UPDATE users
+                    SET login_id = $1, user_last_login = $2
+                    WHERE user_id = $3
+                    "#,
                     login_id,
+                    now,
                     user.user_id
                 )
                 .execute(db.get_ref())
                 .await;
 
-                // Update login_id for user. Don't use the Err(x) value to avoid leaking sensitive
-                // information.
-                if update_result.is_err() {
-                    return HttpResponse::InternalServerError().json(LoginResponse {
-                        message: "Failed to assign login UUID.".into(),
-                    });
-                }
-
-                // Update the last login time.
-                let update_result = sqlx::query!("update users set user_last_login = $1 where user_id = $2", Utc::now(), user.user_id)
-                    .execute(db.get_ref())
-                    .await;
-
-                if update_result.is_err() {
-                    return HttpResponse::InternalServerError().json(LoginResponse {
-                        message: "Failed to update login time.".into(),
-                    })
-                }
-
-                let cookie = Cookie::build("login_id", login_id.to_string())
-                    .path("/")
-                    //.secure(true)
-                    // Avoid JavaScript cookie reading.
-                    .http_only(true)
-                    .finish();
-
-                HttpResponse::Ok().cookie(cookie).json(LoginResponse {
-                    message: "Login successful.".into(),
-                })
-            } else {
-                // Wrong password.
-                HttpResponse::Forbidden().json(LoginResponse {
-                    message: "Invalid credentials.".into(),
-                })
+            if update_result.is_err() {
+                return HttpResponse::InternalServerError().json(LoginResponse {
+                    message: "Failed to create session.".into(),
+                });
             }
+
+            let cookie = Cookie::build("login_id", login_id.to_string())
+                .path("/")
+                .max_age(cookie::time::Duration::seconds(COOKIE_MAX_AGE_SECONDS))
+                .same_site(SameSite::Strict)
+                // Uncomment when using HTTPS.
+                //.secure(true)
+                .http_only(true)
+                .finish();
+
+            HttpResponse::Ok().cookie(cookie).json(LoginResponse {
+                message: "Login successful.".into(),
+            })
         }
         Err(Error::RowNotFound) => {
             // Can't find user by username.

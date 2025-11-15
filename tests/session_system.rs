@@ -57,6 +57,6 @@ mod tests {
 
         let content = protected_resp.text().await.expect("Failed to read response body");
 
-        eprintln!("Protected endpoint response: {}", content);
+        println!("Protected endpoint response: {}", content);
     }
 }
