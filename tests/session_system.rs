@@ -53,9 +53,15 @@ mod tests {
             .await
             .expect("Failed to send request to protected endpoint");
 
-        assert!(protected_resp.status().is_success(), "Access denied to protected endpoint");
+        assert!(
+            protected_resp.status().is_success(),
+            "Access denied to protected endpoint"
+        );
 
-        let content = protected_resp.text().await.expect("Failed to read response body");
+        let content = protected_resp
+            .text()
+            .await
+            .expect("Failed to read response body");
 
         println!("Protected endpoint response: {}", content);
     }

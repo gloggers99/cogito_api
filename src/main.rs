@@ -1,3 +1,4 @@
+mod api_messages;
 mod login;
 mod user;
 

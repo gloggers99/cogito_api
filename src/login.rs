@@ -1,7 +1,10 @@
+use crate::api_messages::{
+    BAD_SESSION, DATABASE_ERROR, SERVER_ERROR, USER_NOT_FOUND, WRONG_PASSWORD,
+};
 use crate::user::User;
 use actix_web::cookie::{Cookie, SameSite};
 use actix_web::web::{Data, Form, Json};
-use actix_web::{Either, HttpRequest, HttpResponse, Responder, post, cookie};
+use actix_web::{Either, HttpRequest, HttpResponse, Responder, cookie, post};
 use chrono::{Duration, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{Error, PgPool};
@@ -17,7 +20,8 @@ pub struct LoginInformation {
 /// Json response sent when logging in through the API.
 #[derive(Serialize)]
 pub struct LoginResponse {
-    pub(crate) message: String,
+    /// This is a static lifetime to avoid dynamic data leaking through.
+    pub(crate) message: &'static str,
 }
 
 const SESSION_DURATION_MINUTES: i64 = 30;
@@ -43,8 +47,8 @@ pub async fn login_request(
             if user.user_pass != password {
                 // Wrong password.
                 return HttpResponse::Forbidden().json(LoginResponse {
-                    message: "Invalid credentials.".into(),
-                })
+                    message: WRONG_PASSWORD,
+                });
             }
 
             // Generate secure login token
@@ -53,21 +57,21 @@ pub async fn login_request(
 
             // Update both login_id and last_login in a single transaction
             let update_result = sqlx::query!(
-                    r#"
+                r#"
                     UPDATE users
                     SET login_id = $1, user_last_login = $2
                     WHERE user_id = $3
                     "#,
-                    login_id,
-                    now,
-                    user.user_id
-                )
-                .execute(db.get_ref())
-                .await;
+                login_id,
+                now,
+                user.user_id
+            )
+            .execute(db.get_ref())
+            .await;
 
             if update_result.is_err() {
                 return HttpResponse::InternalServerError().json(LoginResponse {
-                    message: "Failed to create session.".into(),
+                    message: DATABASE_ERROR,
                 });
             }
 
@@ -81,18 +85,18 @@ pub async fn login_request(
                 .finish();
 
             HttpResponse::Ok().cookie(cookie).json(LoginResponse {
-                message: "Login successful.".into(),
+                message: "Login successful.",
             })
         }
         Err(Error::RowNotFound) => {
             // Can't find user by username.
             HttpResponse::Forbidden().json(LoginResponse {
-                message: "Invalid credentials.".into(),
+                message: USER_NOT_FOUND,
             })
         }
         // Server error.
         Err(_) => HttpResponse::InternalServerError().json(LoginResponse {
-            message: "The server ran into a problem.".into(),
+            message: SERVER_ERROR,
         }),
     }
 }
@@ -120,7 +124,7 @@ pub async fn validate_session(req: &HttpRequest, db: &PgPool) -> Result<User, Ht
         Some(cookie) => cookie,
         None => {
             return Err(HttpResponse::Unauthorized().json(LoginResponse {
-                message: "Missing login_id.".into(),
+                message: "Missing login_id.",
             }));
         }
     };
@@ -130,7 +134,7 @@ pub async fn validate_session(req: &HttpRequest, db: &PgPool) -> Result<User, Ht
         Ok(login_id) => login_id,
         Err(_) => {
             return Err(HttpResponse::BadRequest().json(LoginResponse {
-                message: "Invalid login_id.".into(),
+                message: "Invalid login_id.",
             }));
         }
     };
@@ -155,7 +159,7 @@ pub async fn validate_session(req: &HttpRequest, db: &PgPool) -> Result<User, Ht
         .await;
 
         return Err(HttpResponse::Unauthorized().json(LoginResponse {
-            message: "Session expired. Please login again.".into(),
+            message: BAD_SESSION,
         }));
     }
 
