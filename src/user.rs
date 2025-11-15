@@ -11,12 +11,15 @@ use uuid::Uuid;
 #[derive(Serialize, Deserialize, FromRow, ToSchema)]
 pub struct User {
     pub(crate) user_id: i32,
+    pub(crate) user_email: String,
+    pub(crate) user_phone: String,
     pub(crate) user_name: String,
     pub(crate) user_pass: String,
     #[schema(value_type = String, format = "date-time")]
     pub(crate) user_last_login: DateTime<Utc>,
     #[schema(value_type = String, format = "uuid", nullable)]
     pub(crate) login_id: Option<Uuid>,
+    pub(crate) verified: bool,
     pub(crate) admin: bool,
 }
 
@@ -40,11 +43,13 @@ async fn user_by_id(req: HttpRequest, id: Path<i32>, db: Data<PgPool>) -> impl R
         Err(e) => return e,
     };
 
+    /*
     if !requesting_user.admin {
         return HttpResponse::Forbidden().json(LoginResponse {
             message: UNAUTHORIZED,
         });
     }
+     */
 
     let user = sqlx::query_as!(User, "select * from users where user_id = $1", *id)
         .fetch_one(db.get_ref())
@@ -56,7 +61,7 @@ async fn user_by_id(req: HttpRequest, id: Path<i32>, db: Data<PgPool>) -> impl R
             message: "User not found.",
         }),
         Err(_) => HttpResponse::InternalServerError().json(LoginResponse {
-            message: "Internal server error.",
+            message: SERVER_ERROR,
         }),
     }
 }

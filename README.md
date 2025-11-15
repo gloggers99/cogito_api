@@ -12,6 +12,9 @@ This is a HUGE work in progress.
 - Put your database URL inside under the DATABASE_URL variable:
     ```shell
     DATABASE_URL=postgres://user:pass@127.0.0.1:5432/dbname
+  
+    # Optionally you can have a custom URL/port.
+    # COGITO_API_URL=127.0.0.1:8080
     ```
 - Run the `init.sql` file on your database.
 
@@ -28,15 +31,7 @@ psql -U postgres -d cogito_db
 psql -U postgres -d cogito_db -f "init.sql"
 ```
 
-## Endpoints
-- `/login`
-    - Expects a json form in the format of:
-      ```json
-      {
-        "username": "john",
-        "password": "abc123"
-      }
-      ```
-      If the credentials match, the server will respond with a cookie with your access UUID.
-- `/user/{id}`
-    - Retrieve public user information in json form.
+## OpenAPI
+
+The OpenAPI documentation is available at `/redoc` when the server 
+is running. These docs are generated using `utoipa` and `utoipa-redoc`.
