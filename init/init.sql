@@ -16,5 +16,5 @@ create table users
 alter table users
     owner to postgres;
 
-insert into users (user_email, user_phone, user_name, user_pass)
-values ('sherminator@gmail.com', '9162761362', 'mike', 'sherm');
+--insert into users (user_email, user_phone, user_name, user_pass)
+--values ('sherminator@gmail.com', '9162761362', 'mike', 'sherm');

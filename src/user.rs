@@ -38,7 +38,7 @@ pub struct User {
 )]
 #[get("/users/{id}")]
 async fn user_by_id(req: HttpRequest, id: Path<i32>, db: Data<PgPool>) -> impl Responder {
-    let requesting_user = match validate_session(&req, db.get_ref()).await {
+    let _ = match validate_session(&req, db.get_ref()).await {
         Ok(user) => user,
         Err(e) => return e,
     };

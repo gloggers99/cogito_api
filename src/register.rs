@@ -4,6 +4,7 @@ use actix_web::{Either, HttpResponse, Responder, post};
 use serde::{Deserialize, Serialize};
 use sqlx::{Error, PgPool};
 use utoipa::ToSchema;
+
 // When registering for an account, you must provide a phone number and email. A verification will
 // be sent to both to ensure no bypassing account limits.
 //
@@ -24,6 +25,10 @@ pub struct RegisterResponse {
     pub(crate) message: &'static str,
 }
 
+/// Account registration endpoint.
+///
+/// Upon successful registration, the user account is created in the database. This new user is
+/// not verified however and can't access anything until the email and phone number are confirmed.
 #[utoipa::path(
     post,
     path = "/register",
@@ -74,6 +79,6 @@ insert into users (user_email, user_phone, user_name, user_pass) values ($1, $2,
     }
 
     HttpResponse::Ok().json(RegisterResponse {
-        message: "Registration successful.",
+        message: "Registration successful. Please verify your account via email.",
     })
 }

@@ -158,7 +158,8 @@ pub async fn validate_session(req: &HttpRequest, db: &PgPool) -> Result<User, Ht
 
     // Check when user last logged in.
     let now = Utc::now();
-    if now.signed_duration_since(user.user_last_login) > Duration::minutes(SESSION_DURATION_MINUTES) {
+    if now.signed_duration_since(user.user_last_login) > Duration::minutes(SESSION_DURATION_MINUTES)
+    {
         // Set login_id in database to null.
         // If this fails (impossible theoretically) then it's fine as this will just run again next
         // attempt to access something.

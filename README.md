@@ -1,10 +1,24 @@
 # cogito_api
 
-This is the backend for Cogito, a philosophy research tool.
+This is the backend for Cogito, a philosophy research tool envisioned by [William Chastain](https://williamchastain.com)
+and powered by this API written in whole by [Lucas Marta](https://lucasmarta.com).
 
 This API handles user data and connects to the AI service component of Cogito (using gRPC).
 
 This is a HUGE work in progress.
+
+## Quick PostgreSQL Setup
+
+```shell
+# Create database for cogito
+createdb -U postgres cogito_db
+
+# Now you can access the command prompt for the server
+psql -U postgres -d cogito_db
+
+# Or directly run the script
+psql -U postgres -d cogito_db -f "init.sql"
+```
 
 ## Setup
 
@@ -17,19 +31,6 @@ This is a HUGE work in progress.
     # COGITO_API_URL=127.0.0.1:8080
     ```
 - Run the `init.sql` file on your database.
-
-## Quick PostgreSQL tutorial
-
-```shell
-# Create database for cogito
-createdb -U postgres cogito_db
-
-# Now you can access the command prompt for the server
-psql -U postgres -d cogito_db
-
-# Or directly run the script
-psql -U postgres -d cogito_db -f "init.sql"
-```
 
 ## OpenAPI
 
