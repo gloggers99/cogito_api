@@ -21,13 +21,15 @@ async fn main() -> std::io::Result<()> {
     .await
     .expect("Failed to connect to PostgreSQL database.");
 
+    let server_url = std::env::var("COGITO_API_URL").unwrap_or_else(|_| "127.0.0.1:8080".into());
+
     HttpServer::new(move || {
         App::new()
             .app_data(Data::new(pool.clone()))
             .service(user_by_id)
             .service(login_request)
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind(server_url)?
     .run()
     .await
 }
