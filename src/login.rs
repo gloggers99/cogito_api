@@ -8,19 +8,20 @@ use actix_web::{Either, HttpRequest, HttpResponse, Responder, cookie, post};
 use chrono::{Duration, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{Error, PgPool};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 /// User information form expected when logging in through the API.
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct LoginInformation {
     username: String,
     password: String,
 }
 
-/// Json response sent when logging in through the API.
-#[derive(Serialize)]
+/// JSON response when logging in through the API.
+#[derive(Serialize, ToSchema)]
 pub struct LoginResponse {
-    /// This is a static lifetime to avoid dynamic data leaking through.
+    // This is a static lifetime to avoid dynamic data leaking through.
     pub(crate) message: &'static str,
 }
 
@@ -31,6 +32,16 @@ const COOKIE_MAX_AGE_SECONDS: i64 = SESSION_DURATION_MINUTES * 60;
 ///
 /// Upon successful login the API will grant a cookie attached with a UUID which grants access to
 /// the matching account.
+#[utoipa::path(
+    post,
+    path = "/login",
+    request_body = LoginInformation,
+    responses(
+        (status = 200, description = "Login successful.", body = LoginResponse),
+        (status = 403, description = WRONG_PASSWORD, body = LoginResponse),
+        (status = 500, description = SERVER_ERROR, body = LoginResponse),
+    )
+)]
 #[post("/login")]
 pub async fn login_request(
     info: Either<Json<LoginInformation>, Form<LoginInformation>>,

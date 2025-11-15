@@ -15,3 +15,6 @@ pub static SERVER_ERROR: &'static str = "Internal server error.";
 
 /// The message returned by the API when the session is invalid.
 pub static BAD_SESSION: &'static str = "Invalid session. Please login again.";
+
+/// The message returned by the API when access is unauthorized.
+pub static UNAUTHORIZED: &'static str = "Unauthorized access.";
