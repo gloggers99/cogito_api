@@ -8,6 +8,8 @@ use actix_cors::Cors;
 // For some reason utoipa requires these to be imported like this for the paths to work.
 use crate::conversation::__path_create_conversation;
 use crate::conversation::create_conversation;
+use crate::conversation::get_conversation;
+use crate::conversation::__path_get_conversation;
 use crate::login::__path_login_request;
 use crate::login::login_request;
 use crate::register::__path_register_request;
@@ -30,7 +32,8 @@ use utoipa_redoc::{Redoc, Servable};
         login_request,
         register_request,
         user_by_id,
-        create_conversation
+        create_conversation,
+        get_conversation
     ),
     components(
         schemas(
@@ -115,6 +118,7 @@ async fn main() -> std::io::Result<()> {
             .service(login_request)
             .service(register_request)
             .service(create_conversation)
+            .service(get_conversation)
             .service(Redoc::with_url("/redoc", ApiDoc::openapi()))
     })
     .bind(server_url)?

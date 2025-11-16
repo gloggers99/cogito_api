@@ -15,7 +15,7 @@ create table users
 
 create table conversations (
     conversation_id    serial primary key not null,
-    user_id            integer references users(user_id) on delete cascade,
+    user_id            integer not null references users(user_id) on delete cascade,
 
     conversation       json not null,
     conversation_title text not null default 'New Conversation',
@@ -32,6 +32,3 @@ alter table users
 
 alter table conversations
     owner to postgres;
-
---insert into users (user_email, user_phone, user_name, user_pass)
---values ('sherminator@gmail.com', '9162761362', 'mike', 'sherm');

@@ -1,16 +1,16 @@
 use crate::api_messages::{GenericResponse, BAD_SESSION, SERVER_ERROR};
 use crate::login::validate_session;
 use actix_web::web::{Data, Form, Json};
-use actix_web::{Either, HttpRequest, HttpResponse, Responder, post};
+use actix_web::{Either, HttpRequest, HttpResponse, Responder, post, get, web};
 use chrono::{DateTime, Utc};
 use log::error;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use sqlx::PgPool;
+use sqlx::{Error, PgPool};
 use utoipa::ToSchema;
 
 /// Representation of a conversation with Cogito.
-#[derive(Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct Conversation {
     pub(crate) conversation_id: i32,
     pub(crate) user_id: i32,
@@ -87,4 +87,58 @@ pub async fn create_conversation(
     };
 
     HttpResponse::Ok().json(CreateConversationResponse { conversation_id })
+}
+
+#[utoipa::path(
+    get,
+    path = "/conversation/{conversation_id}",
+    params(
+        ("conversation_id" = i32, Path, description = "The ID of the conversation to retrieve.")
+    ),
+    responses(
+        (status = 200, description = "Conversation retrieved successfully.", body = Conversation),
+        (status = 403, description = BAD_SESSION, body = GenericResponse),
+        (status = 404, description = "Conversation not found.", body = GenericResponse),
+        (status = 500, description = SERVER_ERROR, body = GenericResponse),
+    ))]
+#[get("/conversation/{conversation_id}")]
+pub async fn get_conversation(
+    conversation_id: web::Path<i32>,
+    req: HttpRequest,
+    db: Data<PgPool>,
+) -> impl Responder {
+    let user = match validate_session(&req, db.get_ref()).await {
+        Ok(user) => user,
+        Err(e) => return e,
+    };
+
+    let conversation = match sqlx::query_as!(
+        Conversation,
+        r#"
+        select * from conversations
+        where conversation_id = $1 and user_id = $2
+        "#,
+        *conversation_id,
+        user.user_id
+    ).fetch_one(db.get_ref()).await {
+        Ok(convo) => convo,
+        Err(Error::RowNotFound) => {
+            return HttpResponse::NotFound().json(GenericResponse {
+                message: "Conversation not found.",
+            });
+        }
+        Err(e) => {
+            error!(
+                "Failed to retrieve conversation {} for user {}: {}",
+                *conversation_id, user.user_name, e
+            );
+            return HttpResponse::InternalServerError().json(GenericResponse {
+                message: SERVER_ERROR,
+            });
+        }
+    };
+
+    // TODO: Confirm that the conversation belongs to the user.
+
+    HttpResponse::Ok().json(conversation)
 }
