@@ -13,5 +13,5 @@ uuid = { version = "1.18.1", features = ["serde", "v4"] }
 reqwest = { version = "0.12.24", features = ["cookies", "json"] }
 tokio = { version = "1.48.0", features = ["macros"] }
 utoipa = { version = "5.4.0" }
-#utoipa-swagger-ui = { version = "9.0.2", features = ["actix-web"] }
 utoipa-redoc = { version = "6.0.0", features = ["actix-web"] }
+env_logger = "0.11.8"
