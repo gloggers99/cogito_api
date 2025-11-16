@@ -1,5 +1,5 @@
-use crate::api_messages::{SERVER_ERROR, UNAUTHORIZED};
-use crate::login::{LoginResponse, validate_session};
+use crate::api_messages::{GenericResponse, SERVER_ERROR, UNAUTHORIZED};
+use crate::login::validate_session;
 use actix_web::web::{Data, Path};
 use actix_web::{HttpRequest, HttpResponse, Responder, get};
 use chrono::{DateTime, Utc};
@@ -31,9 +31,9 @@ pub struct User {
     ),
     responses(
         (status = 200, description = "User found.", body = User),
-        (status = 403, description = UNAUTHORIZED, body = LoginResponse),
-        (status = 404, description = "User not found.", body = LoginResponse),
-        (status = 500, description = SERVER_ERROR, body = LoginResponse),
+        (status = 403, description = UNAUTHORIZED, body = GenericResponse),
+        (status = 404, description = "User not found.", body = GenericResponse),
+        (status = 500, description = SERVER_ERROR, body = GenericResponse),
     )
 )]
 #[get("/users/{id}")]
@@ -57,10 +57,10 @@ async fn user_by_id(req: HttpRequest, id: Path<i32>, db: Data<PgPool>) -> impl R
 
     match user {
         Ok(user) => HttpResponse::Ok().json(user),
-        Err(Error::RowNotFound) => HttpResponse::NotFound().json(LoginResponse {
+        Err(Error::RowNotFound) => HttpResponse::NotFound().json(GenericResponse {
             message: "User not found.",
         }),
-        Err(_) => HttpResponse::InternalServerError().json(LoginResponse {
+        Err(_) => HttpResponse::InternalServerError().json(GenericResponse {
             message: SERVER_ERROR,
         }),
     }

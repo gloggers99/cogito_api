@@ -2,11 +2,11 @@ use crate::api_messages::SERVER_ERROR;
 use actix_web::web::{Data, Form, Json};
 use actix_web::{Either, HttpResponse, Responder, post};
 use argon2::Argon2;
+use log::error;
 use password_hash::PasswordHasher;
 use serde::{Deserialize, Serialize};
 use sqlx::{Error, PgPool};
 use utoipa::ToSchema;
-use log::error;
 // When registering for an account, you must provide a phone number and email. A verification will
 // be sent to both to ensure no bypassing account limits.
 //
@@ -55,7 +55,10 @@ pub async fn register_request(
     let hashed_password = match argon.hash_password(register_info.password.as_bytes(), &salt) {
         Ok(hashed_password) => hashed_password,
         Err(e) => {
-            error!("Failed to hash password for new user during registration: {}", e);
+            error!(
+                "Failed to hash password for new user during registration: {}",
+                e
+            );
             return HttpResponse::InternalServerError().json(RegisterResponse {
                 message: SERVER_ERROR,
             });

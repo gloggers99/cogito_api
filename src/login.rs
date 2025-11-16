@@ -1,5 +1,5 @@
 use crate::api_messages::{
-    BAD_SESSION, DATABASE_ERROR, SERVER_ERROR, USER_NOT_FOUND, WRONG_PASSWORD,
+    BAD_SESSION, DATABASE_ERROR, GenericResponse, SERVER_ERROR, USER_NOT_FOUND, WRONG_PASSWORD,
 };
 use crate::user::User;
 use actix_web::cookie::{Cookie, SameSite};
@@ -8,7 +8,7 @@ use actix_web::{Either, HttpRequest, HttpResponse, Responder, cookie, post};
 use argon2::Argon2;
 use chrono::{Duration, Utc};
 use password_hash::{PasswordHash, PasswordVerifier};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize};
 use sqlx::{Error, PgPool};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -18,13 +18,6 @@ use uuid::Uuid;
 pub struct LoginInformation {
     username: String,
     password: String,
-}
-
-/// JSON response when logging in through the API.
-#[derive(Serialize, ToSchema)]
-pub struct LoginResponse {
-    // This is a static lifetime to avoid dynamic data leaking through.
-    pub(crate) message: &'static str,
 }
 
 const SESSION_DURATION_MINUTES: i64 = 30;
@@ -39,9 +32,9 @@ const COOKIE_MAX_AGE_SECONDS: i64 = SESSION_DURATION_MINUTES * 60;
     path = "/login",
     request_body = LoginInformation,
     responses(
-        (status = 200, description = "Login successful.", body = LoginResponse),
-        (status = 403, description = WRONG_PASSWORD, body = LoginResponse),
-        (status = 500, description = SERVER_ERROR, body = LoginResponse),
+        (status = 200, description = "Login successful.", body = GenericResponse),
+        (status = 403, description = WRONG_PASSWORD, body = GenericResponse),
+        (status = 500, description = SERVER_ERROR, body = GenericResponse),
     )
 )]
 #[post("/login")]
@@ -62,16 +55,16 @@ pub async fn login_request(
             if let Err(e) = hash {
                 // Invalid hash stored in database.
                 eprintln!("Invalid password hash for user {}: {}", user.user_name, e);
-                return HttpResponse::InternalServerError().json(LoginResponse {
+                return HttpResponse::InternalServerError().json(GenericResponse {
                     message: SERVER_ERROR,
                 });
             }
 
-            let verification
-                = Argon2::default().verify_password(password.as_bytes(), &hash.unwrap());
+            let verification =
+                Argon2::default().verify_password(password.as_bytes(), &hash.unwrap());
 
             if let Err(_) = verification {
-                return HttpResponse::Forbidden().json(LoginResponse {
+                return HttpResponse::Forbidden().json(GenericResponse {
                     message: WRONG_PASSWORD,
                 });
             }
@@ -95,7 +88,7 @@ pub async fn login_request(
             .await;
 
             if update_result.is_err() {
-                return HttpResponse::InternalServerError().json(LoginResponse {
+                return HttpResponse::InternalServerError().json(GenericResponse {
                     message: DATABASE_ERROR,
                 });
             }
@@ -109,18 +102,18 @@ pub async fn login_request(
                 .http_only(true)
                 .finish();
 
-            HttpResponse::Ok().cookie(cookie).json(LoginResponse {
+            HttpResponse::Ok().cookie(cookie).json(GenericResponse {
                 message: "Login successful.",
             })
         }
         Err(Error::RowNotFound) => {
             // Can't find user by username.
-            HttpResponse::Forbidden().json(LoginResponse {
+            HttpResponse::Forbidden().json(GenericResponse {
                 message: USER_NOT_FOUND,
             })
         }
         // Server error.
-        Err(_) => HttpResponse::InternalServerError().json(LoginResponse {
+        Err(_) => HttpResponse::InternalServerError().json(GenericResponse {
             message: SERVER_ERROR,
         }),
     }
@@ -148,7 +141,7 @@ pub async fn validate_session(req: &HttpRequest, db: &PgPool) -> Result<User, Ht
     let cookie = match req.cookie("login_id") {
         Some(cookie) => cookie,
         None => {
-            return Err(HttpResponse::Unauthorized().json(LoginResponse {
+            return Err(HttpResponse::Unauthorized().json(GenericResponse {
                 message: "Missing login_id.",
             }));
         }
@@ -158,7 +151,7 @@ pub async fn validate_session(req: &HttpRequest, db: &PgPool) -> Result<User, Ht
     let login_id = match Uuid::parse_str(&cookie.value().to_string()) {
         Ok(login_id) => login_id,
         Err(_) => {
-            return Err(HttpResponse::BadRequest().json(LoginResponse {
+            return Err(HttpResponse::BadRequest().json(GenericResponse {
                 message: "Invalid login_id.",
             }));
         }
@@ -184,7 +177,7 @@ pub async fn validate_session(req: &HttpRequest, db: &PgPool) -> Result<User, Ht
         .execute(db)
         .await;
 
-        return Err(HttpResponse::Unauthorized().json(LoginResponse {
+        return Err(HttpResponse::Unauthorized().json(GenericResponse {
             message: BAD_SESSION,
         }));
     }

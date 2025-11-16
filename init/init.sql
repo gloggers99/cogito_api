@@ -15,10 +15,10 @@ create table users
 
 create table conversations (
     conversation_id    serial primary key not null,
-    user_id            serial references users(user_id) on delete cascade,
+    user_id            integer references users(user_id) on delete cascade,
 
     conversation       json not null,
-    conversation_title text not null,
+    conversation_title text not null default 'New Conversation',
 
     created_at         timestamptz not null default current_timestamp
 

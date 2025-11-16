@@ -19,7 +19,7 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
 
@@ -52,6 +52,45 @@
             border: 2px solid #e0e0e0;
             border-radius: 6px;
             font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .cors-warning {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+
+        .cors-warning h4 {
+            color: #856404;
+            margin-bottom: 8px;
+        }
+
+        .cors-warning p {
+            color: #856404;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+
+        .cors-warning code {
+            background: #fff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        .cors-warning ul {
+            margin-left: 20px;
+            color: #856404;
+            font-size: 14px;
+        }
+
+        .cors-warning li {
+            margin-bottom: 5px;
         }
 
         .sections {
@@ -86,16 +125,22 @@
             font-weight: 600;
         }
 
-        input {
+        input, textarea {
             width: 100%;
             padding: 10px;
             border: 2px solid #e0e0e0;
             border-radius: 6px;
             font-size: 14px;
             transition: border-color 0.3s;
+            font-family: inherit;
         }
 
-        input:focus {
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        input:focus, textarea:focus {
             outline: none;
             border-color: #667eea;
         }
@@ -196,6 +241,18 @@
     <div class="api-config">
         <label for="apiBase">API Base URL:</label>
         <input type="text" id="apiBase" value="http://localhost:8080" placeholder="Enter API base URL">
+
+        <div class="cors-warning">
+            <h4>⚠️ CORS Configuration Required</h4>
+            <p>Your API server needs to allow cross-origin requests. Add these headers to your API responses:</p>
+            <ul>
+                <li><code>Access-Control-Allow-Origin: *</code> (or your specific origin)</li>
+                <li><code>Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS</code></li>
+                <li><code>Access-Control-Allow-Headers: Content-Type</code></li>
+                <li><code>Access-Control-Allow-Credentials: true</code></li>
+            </ul>
+            <p><strong>Alternative:</strong> Open this HTML file directly (file://) or use a CORS proxy for testing.</p>
+        </div>
     </div>
 
     <div class="sections">
@@ -241,6 +298,19 @@
             <div id="loginResponse"></div>
         </div>
 
+        <!-- Create Conversation Section -->
+        <div class="section">
+            <h2>💬 Create Conversation</h2>
+            <form id="createConversationForm">
+                <div class="form-group">
+                    <label for="initialMessage">Initial Message:</label>
+                    <textarea id="initialMessage" required placeholder="Enter your first message to start a conversation with Cogito..."></textarea>
+                </div>
+                <button type="submit">Create Conversation</button>
+            </form>
+            <div id="createConversationResponse"></div>
+        </div>
+
         <!-- User Search Section -->
         <div class="section">
             <h2>👤 Get User by ID</h2>
@@ -262,14 +332,15 @@
     function displayResponse(elementId, data, status) {
         const element = document.getElementById(elementId);
         const isSuccess = status >= 200 && status < 300;
-        const statusClass = `status-${status}`;
+        const statusClass = status > 0 ? `status-${status}` : '';
+        const statusText = status > 0 ? `Status: ${status}` : 'Network Error';
 
         element.innerHTML = `
-                <div class="response ${isSuccess ? 'success' : 'error'}">
-                    <h3>Response <span class="status-badge ${statusClass}">Status: ${status}</span></h3>
-                    <pre>${JSON.stringify(data, null, 2)}</pre>
-                </div>
-            `;
+            <div class="response ${isSuccess ? 'success' : 'error'}">
+                <h3>Response <span class="status-badge ${statusClass}">${statusText}</span></h3>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            </div>
+        `;
     }
 
     // Register Form Handler
@@ -300,7 +371,10 @@
                 document.getElementById('registerForm').reset();
             }
         } catch (error) {
-            displayResponse('registerResponse', { error: error.message }, 0);
+            displayResponse('registerResponse', {
+                error: error.message,
+                tip: 'CORS error? Check that your API allows cross-origin requests.'
+            }, 0);
         }
     });
 
@@ -330,7 +404,42 @@
                 document.getElementById('loginForm').reset();
             }
         } catch (error) {
-            displayResponse('loginResponse', { error: error.message }, 0);
+            displayResponse('loginResponse', {
+                error: error.message,
+                tip: 'CORS error? Check that your API allows cross-origin requests.'
+            }, 0);
+        }
+    });
+
+    // Create Conversation Form Handler
+    document.getElementById('createConversationForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const data = {
+            initial_message: document.getElementById('initialMessage').value
+        };
+
+        try {
+            const response = await fetch(`${getApiBase()}/create_conversation`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+                credentials: 'include'
+            });
+
+            const result = await response.json();
+            displayResponse('createConversationResponse', result, response.status);
+
+            if (response.ok) {
+                document.getElementById('createConversationForm').reset();
+            }
+        } catch (error) {
+            displayResponse('createConversationResponse', {
+                error: error.message,
+                tip: 'Make sure you are logged in. CORS error? Check that your API allows cross-origin requests.'
+            }, 0);
         }
     });
 
@@ -349,7 +458,10 @@
             const result = await response.json();
             displayResponse('userResponse', result, response.status);
         } catch (error) {
-            displayResponse('userResponse', { error: error.message }, 0);
+            displayResponse('userResponse', {
+                error: error.message,
+                tip: 'CORS error? Check that your API allows cross-origin requests.'
+            }, 0);
         }
     });
 </script>
