@@ -3,6 +3,7 @@ mod login;
 mod register;
 mod user;
 
+use actix_cors::Cors;
 // For some reason utoipa requires these to be imported like this for the paths to work.
 use crate::login::__path_login_request;
 use crate::login::login_request;
@@ -13,6 +14,7 @@ use crate::user::user_by_id;
 use actix_web::middleware::Logger;
 use actix_web::web::Data;
 use actix_web::{App, HttpServer};
+use actix_web::http::header;
 use dotenvy::dotenv;
 use env_logger::Env;
 use sqlx::PgPool;
@@ -83,9 +85,21 @@ async fn main() -> std::io::Result<()> {
 
     let server_url = std::env::var("COGITO_API_URL").unwrap_or_else(|_| "127.0.0.1:8080".into());
 
+
     HttpServer::new(move || {
+        // TODO: Configure CORS properly for production use.
+        //       This means setting allowed origins to only the frontend URL.
+        //      - Lucas
+        let cors = Cors::default()
+            .allow_any_origin()
+            .allowed_methods(vec!["GET", "POST", "PUT", "DELETE"])
+            .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT, header::CONTENT_TYPE])
+            .supports_credentials()
+            .max_age(3600);
+
         App::new()
             .wrap(Logger::default())
+            .wrap(cors)
             .app_data(Data::new(pool.clone()))
             .service(user_by_id)
             .service(login_request)

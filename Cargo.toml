@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 actix-web = "4.11.0"
+actix-cors = "0.7.1"
 sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio-native-tls", "macros", "chrono", "uuid"] }
 dotenvy = "0.15.7"
 serde = { version = "1.0.228", features = ["derive"] }
