@@ -5,18 +5,18 @@ mod user;
 
 // For some reason utoipa requires these to be imported like this for the paths to work.
 use crate::login::__path_login_request;
+//use utoipa_swagger_ui::SwaggerUi;
+use crate::login::login_request;
 use crate::register::__path_register_request;
+use crate::register::register_request;
 use crate::user::__path_user_by_id;
+use crate::user::user_by_id;
 use actix_web::web::Data;
 use actix_web::{App, HttpServer};
 use dotenvy::dotenv;
 use sqlx::PgPool;
 use utoipa::OpenApi;
 use utoipa_redoc::{Redoc, Servable};
-//use utoipa_swagger_ui::SwaggerUi;
-use crate::login::login_request;
-use crate::register::register_request;
-use crate::user::user_by_id;
 
 // Unfortunately the OpenAPI spec only supports one contact, so I can't put William's info here.
 
@@ -61,12 +61,24 @@ async fn main() -> std::io::Result<()> {
     // Load .env file into environment.
     dotenv().expect("Failed to load `.env` file.");
 
+    let postgres_user =
+        std::env::var("POSTGRES_USER").expect("Expected `POSTGRES_USER` environment variable.");
+
+    let postgres_password = std::env::var("POSTGRES_PASSWORD")
+        .expect("Expected `POSTGRES_PASSWORD` environment variable.");
+
+    let postgres_db =
+        std::env::var("POSTGRES_DB").expect("Expected `POSTGRES_DB` environment variable.");
+
+    let postgres_url = format!(
+        "postgres://{}:{}@127.0.0.1:5432/{}",
+        postgres_user, postgres_password, postgres_db
+    );
+
     // Connect to postgres server.
-    let pool = PgPool::connect(
-        &std::env::var("DATABASE_URL").expect("Set the DB_NAME variable in your `.env` file."),
-    )
-    .await
-    .expect("Failed to connect to PostgreSQL database.");
+    let pool = PgPool::connect(&postgres_url)
+        .await
+        .expect("Postgres docker container should be started.");
 
     let server_url = std::env::var("COGITO_API_URL").unwrap_or_else(|_| "127.0.0.1:8080".into());
 

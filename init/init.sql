@@ -13,7 +13,24 @@ create table users
     admin           boolean not null default false
 );
 
+create table conversations (
+    conversation_id    serial primary key not null,
+    user_id            serial references users(user_id) on delete cascade,
+
+    conversation       json not null,
+    conversation_title text not null,
+
+    created_at         timestamptz not null default current_timestamp
+
+);
+
+-- Allow indexing by user_id for fetching all user convos.
+create index idx_conversations_user_id on conversations(user_id);
+
 alter table users
+    owner to postgres;
+
+alter table conversations
     owner to postgres;
 
 --insert into users (user_email, user_phone, user_name, user_pass)
