@@ -5,7 +5,9 @@ use crate::user::User;
 use actix_web::cookie::{Cookie, SameSite};
 use actix_web::web::{Data, Form, Json};
 use actix_web::{Either, HttpRequest, HttpResponse, Responder, cookie, post};
+use argon2::Argon2;
 use chrono::{Duration, Utc};
+use password_hash::{PasswordHash, PasswordVerifier};
 use serde::{Deserialize, Serialize};
 use sqlx::{Error, PgPool};
 use utoipa::ToSchema;
@@ -55,8 +57,20 @@ pub async fn login_request(
 
     match matched_user {
         Ok(user) => {
-            if user.user_pass != password {
-                // Wrong password.
+            let hash = PasswordHash::new(&*user.user_pass);
+
+            if let Err(e) = hash {
+                // Invalid hash stored in database.
+                eprintln!("Invalid password hash for user {}: {}", user.user_name, e);
+                return HttpResponse::InternalServerError().json(LoginResponse {
+                    message: SERVER_ERROR,
+                });
+            }
+
+            let verification
+                = Argon2::default().verify_password(password.as_bytes(), &hash.unwrap());
+
+            if let Err(_) = verification {
                 return HttpResponse::Forbidden().json(LoginResponse {
                     message: WRONG_PASSWORD,
                 });

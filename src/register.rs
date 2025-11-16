@@ -1,10 +1,12 @@
 use crate::api_messages::SERVER_ERROR;
 use actix_web::web::{Data, Form, Json};
 use actix_web::{Either, HttpResponse, Responder, post};
+use argon2::Argon2;
+use password_hash::PasswordHasher;
 use serde::{Deserialize, Serialize};
 use sqlx::{Error, PgPool};
 use utoipa::ToSchema;
-
+use log::error;
 // When registering for an account, you must provide a phone number and email. A verification will
 // be sent to both to ensure no bypassing account limits.
 //
@@ -46,6 +48,20 @@ pub async fn register_request(
 ) -> impl Responder {
     let register_info = info.into_inner();
 
+    // Hash password using Argon2
+    let salt = password_hash::SaltString::generate(&mut rand::thread_rng());
+
+    let argon = Argon2::default();
+    let hashed_password = match argon.hash_password(register_info.password.as_bytes(), &salt) {
+        Ok(hashed_password) => hashed_password,
+        Err(e) => {
+            error!("Failed to hash password for new user during registration: {}", e);
+            return HttpResponse::InternalServerError().json(RegisterResponse {
+                message: SERVER_ERROR,
+            });
+        }
+    };
+
     let result = sqlx::query!(
         r#"
 insert into users (user_email, user_phone, user_name, user_pass) values ($1, $2, $3, $4)
@@ -53,7 +69,7 @@ insert into users (user_email, user_phone, user_name, user_pass) values ($1, $2,
         register_info.email,
         register_info.phone_number,
         register_info.username,
-        register_info.password,
+        hashed_password.to_string(),
     )
     .execute(db.get_ref())
     .await;
