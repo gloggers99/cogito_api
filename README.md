@@ -13,8 +13,11 @@ This is a HUGE work in progress.
 - Cargo (for building and testing `cogito_api`)
 - Docker 
 ### Steps
-- Create a `.env` file.
-- Put your database URL inside under the DATABASE_URL variable:
+- Create a `.env` file. (or copy the provided `.env.example` to `.env`)
+    ```shell
+    cp ./.env.example ./.env
+    ```
+    It should follow this format. Everything uncommented is required for `cogito_api` to function.
     ```shell
     # ./.env
   
