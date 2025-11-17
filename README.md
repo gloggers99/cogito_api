@@ -46,5 +46,20 @@ This is a HUGE work in progress.
 
 ## OpenAPI
 
-The OpenAPI documentation is available at `/redoc` when the server 
-is running. These docs are generated using `utoipa` and `utoipa-redoc`.
+The OpenAPI documentation is available at `/redoc` when the server is running. These docs are generated using the 
+`utoipa` and `utoipa-redoc` rust crates.
+
+## Additional Information
+This repository is fully implemented by me and serves as an opportunity to demonstrate the range of technologies and 
+practices I'm working to master.  
+
+The AI agent component that this API interacts with is being developed independently by Will 
+[here](https://github.com/CrazyWillBear/research-langgraph). 
+
+Primary technologies demonstrated in this repository:
+
+- Rust
+- PostgreSQL
+- Docker
+- gRPC
+- OpenAPI
