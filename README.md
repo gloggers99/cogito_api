@@ -1,9 +1,9 @@
 # cogito_api
 
-This is the backend for Cogito, a philosophy research tool envisioned by [William Chastain](https://williamchastain.com)
+This is the backend for Cogito, a Q&A style agentic philosophy research tool envisioned by [William Chastain](https://www.williamchastain.com)
 and powered by this API, written in whole by [Lucas Marta](https://lucasmarta.com).
 
-This API handles user data and connects to the AI service component of Cogito (using gRPC).
+This API handles user data and connects to the AI service component of Cogito ([CrazyWillBear/cogito-ai](https://github.com/CrazyWillBear/cogito-ai)) using gRPC.
 
 This is a HUGE work in progress.
 
