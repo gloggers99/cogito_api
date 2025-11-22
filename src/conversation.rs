@@ -1,13 +1,15 @@
 use crate::api_messages::{GenericResponse, BAD_SESSION, FORBIDDEN, SERVER_ERROR};
 use crate::login::validate_session;
 use actix_web::web::{Data, Form, Json};
-use actix_web::{Either, HttpRequest, HttpResponse, Responder, post, get, web};
+use actix_web::{Either, HttpRequest, HttpResponse, Responder, post, get, web, delete};
+use actix_web::web::Path;
 use chrono::{DateTime, Utc};
 use log::error;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{Error, PgPool};
 use utoipa::ToSchema;
+use crate::user::User;
 
 /// Representation of a conversation with Cogito.
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -70,8 +72,8 @@ pub async fn create_conversation(
         user.user_id,
         json!({})
     )
-    .fetch_one(db.get_ref())
-    .await
+        .fetch_one(db.get_ref())
+        .await
     {
         Ok(id) => id,
         // This really shouldn't fail, but handle the error just in case.
@@ -89,6 +91,51 @@ pub async fn create_conversation(
     HttpResponse::Ok().json(CreateConversationResponse { conversation_id })
 }
 
+/// Fetch a conversation by its ID, ensuring it belongs to the given user.
+///
+/// This is not an API path but a shortcut for internal use.
+async fn fetch_conversation(
+    conversation_id: i32,
+    user: &User,
+    db: &PgPool
+) -> Result<Conversation, HttpResponse> {
+    match sqlx::query_as!(
+        Conversation,
+        r#"
+        select * from conversations
+        where conversation_id = $1 and user_id = $2
+        "#,
+        conversation_id,
+        user.user_id
+    ).fetch_one(db).await {
+        Ok(convo) => {
+            // Confirm conversation is owned by the requesting user.
+            if user.user_id != convo.user_id {
+                return Err(HttpResponse::Forbidden().json(GenericResponse {
+                    message: FORBIDDEN,
+                }));
+            }
+
+            Ok(convo)
+        },
+        Err(Error::RowNotFound) => {
+            Err(HttpResponse::NotFound().json(GenericResponse {
+                message: "Conversation not found.",
+            }))
+        }
+        Err(e) => {
+            error!(
+                "Failed to retrieve conversation {} for user {}: {}",
+                conversation_id, user.user_name, e
+            );
+            Err(HttpResponse::InternalServerError().json(GenericResponse {
+                message: SERVER_ERROR,
+            }))
+        }
+    }
+}
+
+/// Get a conversation by its ID.
 #[utoipa::path(
     get,
     path = "/conversation/{conversation_id}",
@@ -100,10 +147,11 @@ pub async fn create_conversation(
         (status = 403, description = BAD_SESSION, body = GenericResponse),
         (status = 404, description = "Conversation not found.", body = GenericResponse),
         (status = 500, description = SERVER_ERROR, body = GenericResponse),
+        (status = 403, description = FORBIDDEN, body = GenericResponse),
     ))]
 #[get("/conversation/{conversation_id}")]
 pub async fn get_conversation(
-    conversation_id: web::Path<i32>,
+    conversation_id: Path<i32>,
     req: HttpRequest,
     db: Data<PgPool>,
 ) -> impl Responder {
@@ -112,38 +160,62 @@ pub async fn get_conversation(
         Err(e) => return e,
     };
 
-    let conversation = match sqlx::query_as!(
-        Conversation,
-        r#"
-        select * from conversations
-        where conversation_id = $1 and user_id = $2
-        "#,
-        *conversation_id,
-        user.user_id
-    ).fetch_one(db.get_ref()).await {
+    let conversation = match fetch_conversation(*conversation_id, &user, db.get_ref()).await {
         Ok(convo) => convo,
-        Err(Error::RowNotFound) => {
-            return HttpResponse::NotFound().json(GenericResponse {
-                message: "Conversation not found.",
-            });
-        }
-        Err(e) => {
-            error!(
-                "Failed to retrieve conversation {} for user {}: {}",
-                *conversation_id, user.user_name, e
-            );
-            return HttpResponse::InternalServerError().json(GenericResponse {
-                message: SERVER_ERROR,
-            });
-        }
+        Err(e) => return e,
     };
 
-    // TODO: Confirm that the conversation belongs to the user.
-    if user.user_id != conversation.user_id {
-        return HttpResponse::Forbidden().json(GenericResponse {
-            message: FORBIDDEN,
-        });
-    }
-
     HttpResponse::Ok().json(conversation)
+}
+
+/// Delete an existing conversation.
+#[utoipa::path(
+    delete,
+    path = "/conversation/{conversation_id}",
+    params(
+        ("conversation_id" = i32, Path, description = "The ID of the conversation to delete.")
+    ),
+    responses(
+        (status = 200, description = "Conversation deleted successfully.", body = GenericResponse),
+        (status = 403, description = BAD_SESSION, body = GenericResponse),
+        (status = 404, description = "Conversation not found.", body = GenericResponse),
+        (status = 500, description = SERVER_ERROR, body = GenericResponse),
+        (status = 403, description = FORBIDDEN, body = GenericResponse),
+    ))]
+#[delete("/conversation/{conversation_id}")]
+pub async fn delete_conversation(
+    conversation_id: Path<i32>,
+    req: HttpRequest,
+    db: Data<PgPool>,
+) -> impl Responder {
+    let user = match validate_session(&req, db.get_ref()).await {
+        Ok(user) => user,
+        Err(e) => return e,
+    };
+
+    let conversation = match fetch_conversation(*conversation_id, &user, db.get_ref()).await {
+        Ok(convo) => convo,
+        Err(e) => return e,
+    };
+
+    match sqlx::query!(
+        r#"
+        delete from conversations
+        where conversation_id = $1
+        "#,
+        conversation.conversation_id
+    ).execute(db.get_ref()).await {
+        Ok(_) => HttpResponse::Ok().json(GenericResponse {
+            message: "Conversation deleted successfully.",
+        }),
+        Err(e) => {
+            error!(
+                "Failed to delete conversation {} for user {}: {}",
+                conversation.conversation_id, user.user_name, e
+            );
+            HttpResponse::InternalServerError().json(GenericResponse {
+                message: SERVER_ERROR,
+            })
+        }
+    }
 }

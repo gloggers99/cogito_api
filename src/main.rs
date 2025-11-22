@@ -10,6 +10,8 @@ use crate::conversation::__path_create_conversation;
 use crate::conversation::create_conversation;
 use crate::conversation::get_conversation;
 use crate::conversation::__path_get_conversation;
+use crate::conversation::delete_conversation;
+use crate::conversation::__path_delete_conversation;
 use crate::login::__path_login_request;
 use crate::login::login_request;
 use crate::register::__path_register_request;
@@ -33,7 +35,8 @@ use utoipa_redoc::{Redoc, Servable};
         register_request,
         user_by_id,
         create_conversation,
-        get_conversation
+        get_conversation,
+        delete_conversation,
     ),
     components(
         schemas(
@@ -119,6 +122,7 @@ async fn main() -> std::io::Result<()> {
             .service(register_request)
             .service(create_conversation)
             .service(get_conversation)
+            .service(delete_conversation)
             .service(Redoc::with_url("/redoc", ApiDoc::openapi()))
     })
     .bind(server_url)?
