@@ -21,7 +21,6 @@ create table conversations (
     conversation_title text not null default 'New Conversation',
 
     created_at         timestamptz not null default current_timestamp
-
 );
 
 -- Allow indexing by user_id for fetching all user convos.

@@ -1,4 +1,4 @@
-use crate::api_messages::{GenericResponse, BAD_SESSION, SERVER_ERROR};
+use crate::api_messages::{GenericResponse, BAD_SESSION, FORBIDDEN, SERVER_ERROR};
 use crate::login::validate_session;
 use actix_web::web::{Data, Form, Json};
 use actix_web::{Either, HttpRequest, HttpResponse, Responder, post, get, web};
@@ -139,6 +139,11 @@ pub async fn get_conversation(
     };
 
     // TODO: Confirm that the conversation belongs to the user.
+    if user.user_id != conversation.user_id {
+        return HttpResponse::Forbidden().json(GenericResponse {
+            message: FORBIDDEN,
+        });
+    }
 
     HttpResponse::Ok().json(conversation)
 }

@@ -22,6 +22,9 @@ pub static BAD_SESSION: &'static str = "Invalid session. Please login again.";
 /// The message returned by the API when access is unauthorized.
 pub static UNAUTHORIZED: &'static str = "Unauthorized access.";
 
+/// The message returned by the API when access is forbidden.
+pub static FORBIDDEN: &'static str = "You do not have access to this.";
+
 /// Generic error/info response returned by the API.
 #[derive(Serialize, ToSchema)]
 pub struct GenericResponse {
