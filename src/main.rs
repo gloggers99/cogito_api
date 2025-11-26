@@ -1,17 +1,18 @@
 mod api_messages;
 mod conversation;
 mod login;
+mod proto;
 mod register;
 mod user;
 
 use actix_cors::Cors;
 // For some reason utoipa requires these to be imported like this for the paths to work.
 use crate::conversation::__path_create_conversation;
-use crate::conversation::create_conversation;
-use crate::conversation::get_conversation;
-use crate::conversation::__path_get_conversation;
-use crate::conversation::delete_conversation;
 use crate::conversation::__path_delete_conversation;
+use crate::conversation::__path_get_conversation;
+use crate::conversation::create_conversation;
+use crate::conversation::delete_conversation;
+use crate::conversation::get_conversation;
 use crate::login::__path_login_request;
 use crate::login::login_request;
 use crate::register::__path_register_request;
@@ -76,6 +77,8 @@ async fn main() -> std::io::Result<()> {
 
     // Load .env file into environment.
     dotenv().expect("Failed to load `.env` file.");
+
+    // Setup gRPC .proto stuff
 
     let postgres_user =
         std::env::var("POSTGRES_USER").expect("Expected `POSTGRES_USER` environment variable.");

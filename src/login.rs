@@ -8,7 +8,7 @@ use actix_web::{Either, HttpRequest, HttpResponse, Responder, cookie, post};
 use argon2::Argon2;
 use chrono::{Duration, Utc};
 use password_hash::{PasswordHash, PasswordVerifier};
-use serde::{Deserialize};
+use serde::Deserialize;
 use sqlx::{Error, PgPool};
 use utoipa::ToSchema;
 use uuid::Uuid;

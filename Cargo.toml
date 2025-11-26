@@ -21,3 +21,10 @@ password-hash = "0.5.0"
 rand = "0.8"
 log = "0.4.28"
 serde_json = "1.0.145"
+tonic = "0.14.2"
+prost = "0.14.1"
+tonic-prost = "0.14.2"
+
+[build-dependencies]
+tonic-build = "0.14.2"
+tonic-prost-build = "0.14.2"
