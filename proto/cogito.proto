@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package cogito;
+
+service Cogito {
+    rpc Ask (AskRequest) returns (AskReply);
+}
+
+message AskRequest {
+    string question = 1;
+}
+
+message AskReply {
+    string answer = 1;
+}
