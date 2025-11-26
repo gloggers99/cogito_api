@@ -46,7 +46,8 @@ async fn setup_postgres() -> Result<PgPool, Box<dyn Error>> {
 
 /// Setup connection with the Cogito agent.
 async fn setup_cogito_agent() -> Result<CogitoAgent, Box<dyn Error>> {
-    let agent_url = std::env::var("AGENT_URL").expect("Expected `AGENT_URL` environment variable.");
+    let agent_url = std::env::var("COGITO_AGENT_URL")
+        .expect("Expected `COGITO_AGENT_URL` environment variable.");
     Ok(CogitoAgent::connect(agent_url).await?)
 }
 
