@@ -26,7 +26,8 @@ pub static UNAUTHORIZED: &'static str = "Unauthorized access.";
 pub static FORBIDDEN: &'static str = "You do not have access to this.";
 
 /// Failed to communicate with the cogito agent.
-pub static AGENT_FAILED_TO_CONNECT: &'static str = "Failed to communicate with the cogito agent.";
+pub static AGENT_FAILED_TO_COMMUNICATE: &'static str =
+    "Failed to communicate with the cogito agent.";
 
 /// Generic error/info response returned by the API.
 #[derive(Serialize, ToSchema)]

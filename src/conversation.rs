@@ -1,9 +1,9 @@
+use crate::agent::CogitoAgent;
 use crate::api_messages::{
     AGENT_FAILED_TO_CONNECT, BAD_SESSION, FORBIDDEN, GenericResponse, SERVER_ERROR,
 };
 use crate::login::validate_session;
-use crate::proto::Question;
-use crate::proto::cogito_client::CogitoClient;
+use crate::proto::{Answer, Question};
 use crate::user::User;
 use actix_web::web::Path;
 use actix_web::web::{Data, Form, Json};
@@ -11,7 +11,7 @@ use actix_web::{Either, HttpRequest, HttpResponse, Responder, delete, get, post}
 use chrono::{DateTime, Utc};
 use log::error;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde_json::Value;
 use sqlx::{Error, PgPool};
 use utoipa::ToSchema;
 
@@ -56,6 +56,7 @@ pub async fn create_conversation(
     req: HttpRequest,
     info: Either<Json<CreateConversationRequest>, Form<CreateConversationRequest>>,
     db: Data<PgPool>,
+    cogito_agent: Data<CogitoAgent>,
 ) -> impl Responder {
     // Make sure we are logged in before creating a conversation.
     let user = match validate_session(&req, db.get_ref()).await {
@@ -65,25 +66,20 @@ pub async fn create_conversation(
 
     let conversation_info = info.into_inner();
 
-    // TODO: Send to Will's AI microservice when functional.
-    //       For now we just create an empty conversation.
-
-    let mut cogito_client = match CogitoClient::connect("http://localhost:9999").await {
-        Ok(client) => client,
-        Err(e) => {
-            error!(
-                "User {} failed to connect with the cogito agent: {}",
-                user.user_name, e
-            );
+    let cogito_response: Answer = match cogito_agent
+        .get_client()
+        .ask(tonic::Request::new(Question {
+            content: conversation_info.initial_message,
+        }))
+        .await
+    {
+        Ok(response) => response.into_inner(),
+        Err(_) => {
             return HttpResponse::InternalServerError().json(GenericResponse {
                 message: AGENT_FAILED_TO_CONNECT,
             });
         }
     };
-
-    let cogito_response = cogito_client.ask(tonic::Request::new(Question {
-        content: conversation_info.initial_message,
-    }));
 
     let conversation_id = match sqlx::query_scalar!(
         r#"
@@ -91,7 +87,7 @@ pub async fn create_conversation(
         values ($1, $2) returning conversation_id
         "#,
         user.user_id,
-        json!({})
+        serde_json::from_str::<Value>(&cogito_response.content).unwrap()
     )
     .fetch_one(db.get_ref())
     .await

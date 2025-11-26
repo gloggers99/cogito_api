@@ -1,4 +1,7 @@
-use std::error::Error;
+use std::{
+    error::Error,
+    ops::{Deref, DerefMut},
+};
 
 use crate::proto::cogito_client::CogitoClient;
 
@@ -15,5 +18,10 @@ impl CogitoAgent {
         Ok(CogitoAgent {
             client: CogitoClient::connect(url).await?,
         })
+    }
+
+    pub fn get_client(&self) -> CogitoClient<tonic::transport::Channel> {
+        // It is cheap to clone here.
+        self.client.clone()
     }
 }
