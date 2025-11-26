@@ -1,15 +1,15 @@
-use crate::api_messages::{GenericResponse, BAD_SESSION, FORBIDDEN, SERVER_ERROR};
+use crate::api_messages::{BAD_SESSION, FORBIDDEN, GenericResponse, SERVER_ERROR};
 use crate::login::validate_session;
-use actix_web::web::{Data, Form, Json};
-use actix_web::{Either, HttpRequest, HttpResponse, Responder, post, get, web, delete};
+use crate::user::User;
 use actix_web::web::Path;
+use actix_web::web::{Data, Form, Json};
+use actix_web::{Either, HttpRequest, HttpResponse, Responder, delete, get, post, web};
 use chrono::{DateTime, Utc};
 use log::error;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{Error, PgPool};
 use utoipa::ToSchema;
-use crate::user::User;
 
 /// Representation of a conversation with Cogito.
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -72,8 +72,8 @@ pub async fn create_conversation(
         user.user_id,
         json!({})
     )
-        .fetch_one(db.get_ref())
-        .await
+    .fetch_one(db.get_ref())
+    .await
     {
         Ok(id) => id,
         // This really shouldn't fail, but handle the error just in case.
@@ -97,7 +97,7 @@ pub async fn create_conversation(
 async fn fetch_conversation(
     conversation_id: i32,
     user: &User,
-    db: &PgPool
+    db: &PgPool,
 ) -> Result<Conversation, HttpResponse> {
     match sqlx::query_as!(
         Conversation,
@@ -107,22 +107,21 @@ async fn fetch_conversation(
         "#,
         conversation_id,
         user.user_id
-    ).fetch_one(db).await {
+    )
+    .fetch_one(db)
+    .await
+    {
         Ok(convo) => {
             // Confirm conversation is owned by the requesting user.
             if user.user_id != convo.user_id {
-                return Err(HttpResponse::Forbidden().json(GenericResponse {
-                    message: FORBIDDEN,
-                }));
+                return Err(HttpResponse::Forbidden().json(GenericResponse { message: FORBIDDEN }));
             }
 
             Ok(convo)
-        },
-        Err(Error::RowNotFound) => {
-            Err(HttpResponse::NotFound().json(GenericResponse {
-                message: "Conversation not found.",
-            }))
         }
+        Err(Error::RowNotFound) => Err(HttpResponse::NotFound().json(GenericResponse {
+            message: "Conversation not found.",
+        })),
         Err(e) => {
             error!(
                 "Failed to retrieve conversation {} for user {}: {}",
@@ -204,7 +203,10 @@ pub async fn delete_conversation(
         where conversation_id = $1
         "#,
         conversation.conversation_id
-    ).execute(db.get_ref()).await {
+    )
+    .execute(db.get_ref())
+    .await
+    {
         Ok(_) => HttpResponse::Ok().json(GenericResponse {
             message: "Conversation deleted successfully.",
         }),

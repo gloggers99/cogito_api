@@ -3,13 +3,13 @@ syntax = "proto3";
 package cogito;
 
 service Cogito {
-    rpc Ask (AskRequest) returns (AskReply);
+    rpc Ask (Question) returns (Answer);
 }
 
-message AskRequest {
-    string question = 1;
+message Question {
+    string content = 1;
 }
 
-message AskReply {
-    string answer = 1;
+message Answer {
+    string content = 1;
 }
