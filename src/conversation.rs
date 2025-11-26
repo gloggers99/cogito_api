@@ -1,6 +1,6 @@
 use crate::agent::CogitoAgent;
 use crate::api_messages::{
-    AGENT_FAILED_TO_CONNECT, BAD_SESSION, FORBIDDEN, GenericResponse, SERVER_ERROR,
+    AGENT_FAILED_TO_COMMUNICATE, BAD_SESSION, FORBIDDEN, GenericResponse, SERVER_ERROR,
 };
 use crate::login::validate_session;
 use crate::proto::{Answer, Question};
