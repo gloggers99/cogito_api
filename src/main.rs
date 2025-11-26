@@ -1,85 +1,32 @@
 mod agent;
 mod api_messages;
 mod conversation;
+mod documentation;
 mod login;
 mod proto;
 mod register;
 mod user;
 
-use actix_cors::Cors;
-// For some reason utoipa requires these to be imported like this for the paths to work.
-use crate::conversation::__path_create_conversation;
-use crate::conversation::__path_delete_conversation;
-use crate::conversation::__path_get_conversation;
-use crate::conversation::create_conversation;
-use crate::conversation::delete_conversation;
-use crate::conversation::get_conversation;
-use crate::login::__path_login_request;
+use std::error::Error;
+
+use crate::agent::CogitoAgent;
+use crate::conversation::{create_conversation, delete_conversation, get_conversation};
+use crate::documentation::ApiDoc;
 use crate::login::login_request;
-use crate::proto::cogito_client::CogitoClient;
-use crate::register::__path_register_request;
 use crate::register::register_request;
-use crate::user::__path_user_by_id;
 use crate::user::user_by_id;
-use actix_web::http::header;
-use actix_web::middleware::Logger;
+use actix_cors::Cors;
 use actix_web::web::Data;
 use actix_web::{App, HttpServer};
+use actix_web::{http::header, middleware::Logger};
 use dotenvy::dotenv;
 use env_logger::Env;
 use sqlx::PgPool;
 use utoipa::OpenApi;
 use utoipa_redoc::{Redoc, Servable};
 
-#[derive(OpenApi)]
-#[openapi(
-    paths(
-        login_request,
-        register_request,
-        user_by_id,
-        create_conversation,
-        get_conversation,
-        delete_conversation,
-    ),
-    components(
-        schemas(
-            login::LoginInformation,
-            api_messages::GenericResponse,
-            register::RegisterInformation,
-            register::RegisterResponse,
-            user::User,
-            conversation::Conversation,
-            conversation::CreateConversationRequest,
-            conversation::CreateConversationResponse,
-        )
-    ),
-    tags(
-        (name = "cogito_api", description = "Cogito API endpoints.")
-    ),
-    info(
-        title = "Cogito API",
-        version = "1.0",
-        description = "API backend for the Cogito project.",
-        license(
-            name = "PolyForm Noncommercial License 1.0.0",
-            url = "https://polyformproject.org/licenses/noncommercial/1.0.0/"
-        ),
-        contact(
-            name = "Lucas Marta",
-            url = "https://lucasmarta.com",
-            email = "lucas.marta0799@gmail.com"
-        ),
-    )
-)]
-pub struct ApiDoc;
-
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    env_logger::init_from_env(Env::default().default_filter_or("info"));
-
-    // Load .env file into environment.
-    dotenv().expect("Failed to load `.env` file.");
-
+/// Connect to PostgreSQL server using `.env` file definitions.
+async fn setup_postgres() -> Result<PgPool, Box<dyn Error>> {
     let postgres_user =
         std::env::var("POSTGRES_USER").expect("Expected `POSTGRES_USER` environment variable.");
 
@@ -94,16 +41,30 @@ async fn main() -> std::io::Result<()> {
         postgres_user, postgres_password, postgres_db
     );
 
-    // Setup gRPC
-    let agent_url = std::env::var("AGENT_URL").expect("Expected `AGENT_URL` environment variable.");
-    let cogito_agent = agent::CogitoAgent::connect(agent_url)
-        .await
-        .expect("Failed to connect to Cogito agent.");
+    Ok(PgPool::connect(&postgres_url).await?)
+}
 
-    // Connect to postgres server.
-    let pool = PgPool::connect(&postgres_url)
+/// Setup connection with the Cogito agent.
+async fn setup_cogito_agent() -> Result<CogitoAgent, Box<dyn Error>> {
+    let agent_url = std::env::var("AGENT_URL").expect("Expected `AGENT_URL` environment variable.");
+    Ok(CogitoAgent::connect(agent_url).await?)
+}
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    // Setup logging
+    env_logger::init_from_env(Env::default().default_filter_or("info"));
+
+    // Load .env file into environment.
+    dotenv().expect("Failed to load `.env` file.");
+
+    let postgres_pool = setup_postgres()
         .await
-        .expect("Postgres docker container should be started.");
+        .expect("Failed to connect to PostgreSQL server.");
+
+    let cogito_agent = setup_cogito_agent()
+        .await
+        .expect("Failed to connect to the Cogito agent.");
 
     let server_url = std::env::var("COGITO_API_URL").unwrap_or_else(|_| "127.0.0.1:8080".into());
 
@@ -125,7 +86,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(Logger::default())
             .wrap(cors)
-            .app_data(Data::new(pool.clone()))
+            .app_data(Data::new(postgres_pool.clone()))
             .app_data(cogito_agent.clone())
             .service(user_by_id)
             .service(login_request)
