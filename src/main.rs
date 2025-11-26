@@ -1,3 +1,4 @@
+mod agent;
 mod api_messages;
 mod conversation;
 mod login;
@@ -15,6 +16,7 @@ use crate::conversation::delete_conversation;
 use crate::conversation::get_conversation;
 use crate::login::__path_login_request;
 use crate::login::login_request;
+use crate::proto::cogito_client::CogitoClient;
 use crate::register::__path_register_request;
 use crate::register::register_request;
 use crate::user::__path_user_by_id;
@@ -78,8 +80,6 @@ async fn main() -> std::io::Result<()> {
     // Load .env file into environment.
     dotenv().expect("Failed to load `.env` file.");
 
-    // Setup gRPC .proto stuff
-
     let postgres_user =
         std::env::var("POSTGRES_USER").expect("Expected `POSTGRES_USER` environment variable.");
 
@@ -93,6 +93,12 @@ async fn main() -> std::io::Result<()> {
         "postgres://{}:{}@127.0.0.1:5432/{}",
         postgres_user, postgres_password, postgres_db
     );
+
+    // Setup gRPC
+    let agent_url = std::env::var("AGENT_URL").expect("Expected `AGENT_URL` environment variable.");
+    let cogito_agent = agent::CogitoAgent::connect(agent_url)
+        .await
+        .expect("Failed to connect to Cogito agent.");
 
     // Connect to postgres server.
     let pool = PgPool::connect(&postgres_url)
@@ -120,6 +126,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(Logger::default())
             .wrap(cors)
             .app_data(Data::new(pool.clone()))
+            .app_data(cogito_agent.clone())
             .service(user_by_id)
             .service(login_request)
             .service(register_request)

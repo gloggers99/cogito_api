@@ -31,6 +31,9 @@ This is a HUGE work in progress.
   
     # You will need this for the sqlx library to check queries at compile time.
     DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DB}"
+    
+    # The URL for the Cogito agent's gRPC server.
+    AGENT_URL="127.0.0.1:9999"
     ```
 - Start the PostgreSQL database using Docker:
     ```shell

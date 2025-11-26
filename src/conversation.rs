@@ -1,9 +1,13 @@
-use crate::api_messages::{BAD_SESSION, FORBIDDEN, GenericResponse, SERVER_ERROR};
+use crate::api_messages::{
+    AGENT_FAILED_TO_CONNECT, BAD_SESSION, FORBIDDEN, GenericResponse, SERVER_ERROR,
+};
 use crate::login::validate_session;
+use crate::proto::Question;
+use crate::proto::cogito_client::CogitoClient;
 use crate::user::User;
 use actix_web::web::Path;
 use actix_web::web::{Data, Form, Json};
-use actix_web::{Either, HttpRequest, HttpResponse, Responder, delete, get, post, web};
+use actix_web::{Either, HttpRequest, HttpResponse, Responder, delete, get, post};
 use chrono::{DateTime, Utc};
 use log::error;
 use serde::{Deserialize, Serialize};
@@ -59,10 +63,27 @@ pub async fn create_conversation(
         Err(e) => return e,
     };
 
-    let _conversation_info = info.into_inner();
+    let conversation_info = info.into_inner();
 
     // TODO: Send to Will's AI microservice when functional.
     //       For now we just create an empty conversation.
+
+    let mut cogito_client = match CogitoClient::connect("http://localhost:9999").await {
+        Ok(client) => client,
+        Err(e) => {
+            error!(
+                "User {} failed to connect with the cogito agent: {}",
+                user.user_name, e
+            );
+            return HttpResponse::InternalServerError().json(GenericResponse {
+                message: AGENT_FAILED_TO_CONNECT,
+            });
+        }
+    };
+
+    let cogito_response = cogito_client.ask(tonic::Request::new(Question {
+        content: conversation_info.initial_message,
+    }));
 
     let conversation_id = match sqlx::query_scalar!(
         r#"
