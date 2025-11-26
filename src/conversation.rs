@@ -76,7 +76,7 @@ pub async fn create_conversation(
         Ok(response) => response.into_inner(),
         Err(_) => {
             return HttpResponse::InternalServerError().json(GenericResponse {
-                message: AGENT_FAILED_TO_CONNECT,
+                message: AGENT_FAILED_TO_COMMUNICATE,
             });
         }
     };
