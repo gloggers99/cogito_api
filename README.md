@@ -12,10 +12,13 @@ This is a HUGE work in progress.
 ## Setup
 
 ### Dependencies
+
 - Cargo (for building and testing `cogito_api`)
 - Docker 
 - Protocol Buffer Compiler (`protoc`)
+
 ### Steps
+
 - Create a `.env` file. (or copy the provided `.env.example` to `.env`)
     ```shell
     cp ./.env.example ./.env
@@ -59,6 +62,7 @@ The OpenAPI documentation is available at `/redoc` when the server is running. T
 `utoipa` and `utoipa-redoc` rust crates.
 
 ## Additional Information
+
 This repository is fully implemented by me and serves as an opportunity to demonstrate the range of technologies and 
 practices I'm working to master.  
 
