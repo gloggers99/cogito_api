@@ -12,6 +12,7 @@ This is a HUGE work in progress.
 ### Dependencies
 - Cargo (for building and testing `cogito_api`)
 - Docker 
+- Protocol Buffer Compiler (`protoc`)
 ### Steps
 - Create a `.env` file. (or copy the provided `.env.example` to `.env`)
     ```shell
