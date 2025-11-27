@@ -1,5 +1,7 @@
 # cogito_api
 
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/c9e12ce76ba5439a99fe03880d2180db)](https://app.codacy.com/gh/gloggers99/cogito_api/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+
 This is the backend for Cogito, a Q&A style agentic philosophy research tool envisioned by [William Chastain](https://www.williamchastain.com)
 and powered by this API, written in whole by [Lucas Marta](https://lucasmarta.com).
 
