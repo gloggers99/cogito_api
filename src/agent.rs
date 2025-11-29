@@ -1,7 +1,4 @@
-use std::{
-    error::Error,
-    ops::{Deref, DerefMut},
-};
+use std::error::Error;
 
 use crate::proto::cogito_client::CogitoClient;
 

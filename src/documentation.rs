@@ -1,5 +1,4 @@
 use utoipa::OpenApi;
-use utoipa::openapi;
 
 // For some reason it wants the full qualified paths with the "__" prefix as shown.
 use crate::api_messages;
