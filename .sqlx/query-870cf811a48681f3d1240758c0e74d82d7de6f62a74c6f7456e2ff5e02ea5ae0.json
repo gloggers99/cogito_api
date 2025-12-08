@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        insert into conversations (user_id, conversation)\n        values ($1, $2) returning conversation_id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "conversation_id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Json"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "870cf811a48681f3d1240758c0e74d82d7de6f62a74c6f7456e2ff5e02ea5ae0"
+}

@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\ninsert into users (user_email, user_phone, user_name, user_pass) values ($1, $2, $3, $4)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4f47b0e85bd710877c84678f2dceebf5764a2f681ab447789660fb98ee9aa0ec"
+}

@@ -27,21 +27,12 @@ use utoipa_redoc::{Redoc, Servable};
 
 /// Connect to PostgreSQL server using `.env` file definitions.
 async fn setup_postgres() -> Result<PgPool, Box<dyn Error>> {
-    let postgres_user =
-        std::env::var("POSTGRES_USER").expect("Expected `POSTGRES_USER` environment variable.");
+    let database_url =
+        std::env::var("DATABASE_URL").expect("Expected `DATABASE_URL` environment variable.");
 
-    let postgres_password = std::env::var("POSTGRES_PASSWORD")
-        .expect("Expected `POSTGRES_PASSWORD` environment variable.");
+    eprintln!("Connecting to db with: \"{}\".", database_url);
 
-    let postgres_db =
-        std::env::var("POSTGRES_DB").expect("Expected `POSTGRES_DB` environment variable.");
-
-    let postgres_url = format!(
-        "postgres://{}:{}@127.0.0.1:5432/{}",
-        postgres_user, postgres_password, postgres_db
-    );
-
-    Ok(PgPool::connect(&postgres_url).await?)
+    Ok(PgPool::connect(&database_url).await?)
 }
 
 /// Setup connection with the Cogito agent.
@@ -57,7 +48,9 @@ async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(Env::default().default_filter_or("info"));
 
     // Load .env file into environment.
-    dotenv().expect("Failed to load `.env` file.");
+    if let Err(e) = dotenv() {
+        eprintln!("Proceeding without loaded `.env` file: {}", e);
+    }
 
     let postgres_pool = setup_postgres()
         .await

@@ -3,14 +3,24 @@ services:
     image: postgres:18
     container_name: cogito_db
     restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+    env_file:
+      - .env
+      - .env.sourced
     volumes:
       - ./init:/docker-entrypoint-initdb.d
       - pgdata:/var/lib/postgresql
     ports:
       - "5432:5432"
+  api:
+    build: .
+    container_name: cogito_api
+    depends_on:
+      - db
+    env_file:
+      - .env
+      - .env.sourced
+    ports:
+      - "8080:8080"
+    command: ["/usr/local/bin/cogito_api"]
 volumes:
   pgdata:

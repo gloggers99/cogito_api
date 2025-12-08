@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        delete from conversations\n        where conversation_id = $1\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8a5f00c09007a29b947e1a77b460dd09fbf97c999db03b4d23dfdf79c7be8617"
+}

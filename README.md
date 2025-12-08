@@ -26,34 +26,23 @@ This is a HUGE work in progress.
     It should follow this format. Everything uncommented is required for `cogito_api` to function.
     ```shell
     # ./.env
-  
-    # Optionally you can have a custom URL/port to host the API on.
-    # COGITO_API_URL=127.0.0.1:8080
-
-    # You will need this for docker.
+      
+    # Database credentials.
     POSTGRES_USER=postgres
-    POSTGRES_PASSWORD=postgres_password
+    POSTGRES_PASSWORD=password
     POSTGRES_DB=cogito_db
-  
-    # You will need this for the sqlx library to check queries at compile time.
-    DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DB}"
     
-    # The URL for the Cogito agent's gRPC server.
-    COGITO_AGENT_URL="127.0.0.1:9999"
+    # Optional IP & port to bind the API service to.
+    # If this does not exist the default will be "127.0.0.1:8080"
+    COGITO_API_URL=127.0.0.1:8080
     
-    # This is for `.proto` compiled files.
-    OUT_DIR="src/generated"
-    ```
-- Start the PostgreSQL database using Docker:
-    ```shell
-    # Ensure you are in the cogito_api directory.
-    docker compose up -d
+    # The IP & port of the Cogito agent.
+    COGITO_AGENT_URL=127.0.0.1:9999
     ```
 - Finally start the API:
     ```shell
-    # For now this is the preferred way to run the server. 
-    # In the future we can compile binaries or turn this into a docker image.
-    cargo run --release
+    # This will start both the api and the database.
+    docker compose up -d
     ```
 
 ## OpenAPI
